@@ -8,13 +8,7 @@ import { Recipe } from "./recipe.model";
 export class RecipeService{
   recipeSelected =  new Subject<Recipe>();
   recipeChanged = new Subject<Recipe[]>();
-  private recipes: Recipe[] = [
-    new Recipe('Pizza1', 
-      'Double cheez pizza',
-      'https://image.shutterstock.com/image-photo/kiev-ukraine-031219-sign-dominos-600w-1347282647.jpg',
-        [ new Ingredient('Meat', 1), new Ingredient('Frech Fries', 20)]),
-    new Recipe('Pizza2', 'Double cheez pizza', 'https://image.shutterstock.com/image-photo/kiev-ukraine-031219-sign-dominos-600w-1347282647.jpg', [new Ingredient('Meat', 1), new Ingredient('Frech Fries', 20)])
-  ]
+  private recipes: Recipe[] = [];
 
   constructor(private slService: ShoppingListService){
 
@@ -22,6 +16,12 @@ export class RecipeService{
 
   getRecipes() {
     return this.recipes.slice();
+  }
+
+  setRecipes(recipes: Recipe[]) {
+    this.recipes = recipes;
+
+    this.recipeChanged.next(this.recipes.slice());
   }
 
   getRecipe(index: number) {
