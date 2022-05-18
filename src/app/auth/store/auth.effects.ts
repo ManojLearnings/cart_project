@@ -36,10 +36,10 @@ export class AuthEffects {
     })
   )
 
-  @Effect()
+  @Effect({ dispatch: false })
   authSuccess = this.action$.pipe(ofType(fromAuthActions.LOGIN),
     tap( () => {
-      // return this.router.navigate(['/'])
+      this.router.navigate(['/'])
     })
   );
 
