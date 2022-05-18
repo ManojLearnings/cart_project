@@ -5,12 +5,15 @@ import { AuthService } from "../auth/auth.service";
 import { UserModel } from "../auth/user.model";
 import { Recipe } from "../recipes/recipe.model";
 import { RecipeService } from "../recipes/recipe.service";
+import { Store } from "@ngrx/store";
+import * as fromAppReduces from "../store/app.reducer"
 
 @Injectable({providedIn: 'root'})
 export class DataStorageService {
   constructor(private httpClient: HttpClient,
     private recipeService: RecipeService,
-    private authService: AuthService) {}
+    private authService: AuthService,
+    private store: Store<fromAppReduces.AppState>) {}
 
   storeRecipes() {
     const recipes = this.recipeService.getRecipes();
@@ -21,8 +24,11 @@ export class DataStorageService {
   }
 
   fetchRecipes() {
-    return this.authService.userSubject.pipe(
-      take(1), 
+    return this.store.select('auth').pipe(
+      take(1),
+      map( authState => {
+        return authState.user;
+      }),
       exhaustMap( (user: UserModel) => {
         return this.httpClient.get<Recipe[]>('https://ngcartproject-default-rtdb.firebaseio.com/recipes.json')
       }),
