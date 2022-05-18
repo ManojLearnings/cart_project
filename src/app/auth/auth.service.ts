@@ -1,14 +1,6 @@
-import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Router } from "@angular/router";
-import { BehaviorSubject, catchError, tap, throwError } from "rxjs";
 import { Store } from "@ngrx/store";
-
-import { AuthResponseData } from "./auth-response.model";
-import { UserModel } from "./user.model";
-import { environment } from "src/environments/environment";
-import * as fromApp from '../store/app.reducer';
-import * as fromAuthActions from './store/auth.actions';
+import * as fromAuthActions from './store/auth.actions'
 
 @Injectable({providedIn: 'root'})
 export class AuthService {
@@ -16,122 +8,18 @@ export class AuthService {
   token: string = null;
   tokenExpirationTime: any;
 
-  constructor(private http: HttpClient,
-    private router: Router,
-    private store: Store) {}
+  constructor(private store: Store) {}
 
-  signUp(email: string, password: string) {
-    const signUpUrl = 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + environment.fireBaseApiKey;
-    return this.http.post<AuthResponseData>(signUpUrl, {
-      email: email,
-      password: password,
-      returnSecureToken: true
-    }).pipe(catchError(this.errorHandler))
+  setLogoutTimer(autoLogoutTime: number) {
+    this.tokenExpirationTime = setTimeout(() => {
+      this.store.dispatch(new fromAuthActions.Logout());
+    }, autoLogoutTime);
   }
 
-  signIn(email: string, password: string){
-    let signInUrl = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + environment.fireBaseApiKey;
-    return this.http.post<AuthResponseData>(signInUrl, {
-      email: email,
-      password: password,
-      returnSecureToken: true
-    }).pipe(catchError(this.errorHandler), tap(
-      responseData => {
-        this.handleAuthentication(responseData)
-      }
-    ))
-  }
-
-  signOut() {
-    // this.userSubject.next(null);
-    localStorage.removeItem('userData');
-    this.store.dispatch(new fromAuthActions.Logout())
-    this.router.navigate(['/auth']);
-
+  clearLogoutTimer() {
     if(this.tokenExpirationTime) {
       clearTimeout(this.tokenExpirationTime);
       this.tokenExpirationTime = null;
     }
-  }
-
-  autoSignIn() {
-    let userData: {email: string,
-      id: string,
-      _token: string,
-      _tokenExpirationDate: string} = JSON.parse(localStorage.getItem('userData'));
-    if(!userData) {
-      return;
-    }
-
-    const loadedUser = new UserModel(userData.email,
-      userData.id,
-      userData._token,
-      new Date(userData._tokenExpirationDate));
-
-    if (loadedUser.token) {
-      this.store.dispatch(new fromAuthActions.Login({
-        email: loadedUser.email,
-        userId: loadedUser.id,
-        token: loadedUser.token,
-        expirationDate: new Date(userData._tokenExpirationDate)
-      }
-    ));
-
-      const expirationDuration = new Date(userData._tokenExpirationDate).getTime() - new Date().getTime();
-      this.autoSignout(expirationDuration);
-    }
-  }
-
-  autoSignout(autoLogoutTime: number) {
-    this.tokenExpirationTime = setTimeout(() => {
-      this.signOut();
-    }, autoLogoutTime);
-  }
-
-  private handleAuthentication(responseData: AuthResponseData){
-    const expirationDate = new Date(new Date().getTime() + +responseData.expiresIn * 1000);
-    // this.userSubject.next(user);
-    const user = new UserModel(responseData.email,
-      responseData.localId,
-      responseData.idToken,
-      expirationDate)
-      
-    this.store.dispatch(new fromAuthActions.Login({
-      email: responseData.email,
-      userId: responseData.localId,
-      token: responseData.idToken,
-      expirationDate: expirationDate}));
-
-    const expirationTime = (expirationDate.getTime() - new Date().getTime());
-    this.autoSignout(expirationTime);
-    localStorage.setItem('userData', JSON.stringify(user));
-  }
-
-  private errorHandler(errorResponse: HttpErrorResponse) {
-    let errorMessage = 'Unknown error occured.'
-      if(!errorResponse.error || !errorResponse.error.error) {
-        return throwError(errorMessage);
-      }
-      switch(errorResponse.error.error.message) {
-        case 'EMAIL_EXISTS':
-          errorMessage = 'The email address is already in use by another account.';
-          break;
-        case 'EMAIL_NOT_FOUND':
-          errorMessage = 'There is no user record corresponding to this identifier. The user may have been deleted.';
-          break;
-        case 'INVALID_PASSWORD':
-          errorMessage = 'The password is invalid or the user does not have a password.';
-          break;
-        case 'USER_DISABLED':
-          errorMessage = 'The user account has been disabled by an administrator.';
-          break;
-        case 'OPERATION_NOT_ALLOWED':
-          errorMessage = 'Password sign-in is disabled for this project.';
-          break;
-        case 'TOO_MANY_ATTEMPTS_TRY_LATER':
-          errorMessage = 'We have blocked all requests from this device due to unusual activity. Try again later.';
-          break;
-      }
-      return throwError(errorMessage);
   }
 }
