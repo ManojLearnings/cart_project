@@ -3,7 +3,6 @@ import { Injectable } from "@angular/core";
 import { exhaustMap, map, take, tap } from "rxjs";
 import { UserModel } from "../auth/user.model";
 import { Recipe } from "../recipes/recipe.model";
-import { RecipeService } from "../recipes/recipe.service";
 import { Store } from "@ngrx/store";
 import * as fromAppReduces from "../store/app.reducer"
 import * as fromAppActions from "../recipes/store/recipe.actions"
@@ -11,15 +10,14 @@ import * as fromAppActions from "../recipes/store/recipe.actions"
 @Injectable({providedIn: 'root'})
 export class DataStorageService {
   constructor(private httpClient: HttpClient,
-    private recipeService: RecipeService,
     private store: Store<fromAppReduces.AppState>) {}
 
   storeRecipes() {
-    const recipes = this.recipeService.getRecipes();
-    this.httpClient.put('https://ngcartproject-default-rtdb.firebaseio.com/recipes.json',
-      recipes).subscribe( responseData => {
-        console.log(responseData);
-      })
+    // const recipes = this.recipeService.getRecipes();
+    // this.httpClient.put('https://ngcartproject-default-rtdb.firebaseio.com/recipes.json',
+    //   recipes).subscribe( responseData => {
+    //     console.log(responseData);
+    //   })
   }
 
   fetchRecipes() {
